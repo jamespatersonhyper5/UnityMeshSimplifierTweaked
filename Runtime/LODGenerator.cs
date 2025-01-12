@@ -531,7 +531,7 @@ namespace UnityMeshSimplifier
             return skinnedMeshRenderer;
         }
 
-        private static Transform FindBestRootBone(Transform transform, SkinnedMeshRenderer[] skinnedMeshRenderers)
+        public static Transform FindBestRootBone(Transform transform, SkinnedMeshRenderer[] skinnedMeshRenderers)
         {
             if (skinnedMeshRenderers == null || skinnedMeshRenderers.Length == 0)
                 return null;

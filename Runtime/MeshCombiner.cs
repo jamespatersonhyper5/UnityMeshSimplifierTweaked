@@ -85,7 +85,7 @@ namespace UnityMeshSimplifier
         /// <param name="resultMaterials">The resulting materials for the combined mesh.</param>
         /// <param name="resultBones">The resulting bones for the combined mesh.</param>
         /// <returns>The combined mesh.</returns>
-        public static Mesh CombineMeshes(Transform rootTransform, SkinnedMeshRenderer[] renderers, out Material[] resultMaterials, out Transform[] resultBones)
+        public static Mesh CombineMeshes(Transform rootTransform, SkinnedMeshRenderer[] renderers, out Material[] resultMaterials, out Transform[] resultBones, bool hackToSingleMaterial = false)
         {
             if (rootTransform == null)
                 throw new System.ArgumentNullException(nameof(rootTransform));
@@ -96,6 +96,8 @@ namespace UnityMeshSimplifier
             var transforms = new Matrix4x4[renderers.Length];
             var materials = new Material[renderers.Length][];
             var bones = new Transform[renderers.Length][];
+
+            var fakeSingleMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
 
             for (int i = 0; i < renderers.Length; i++)
             {
@@ -110,7 +112,15 @@ namespace UnityMeshSimplifier
                 var rendererTransform = renderer.transform;
                 meshes[i] = renderer.sharedMesh;
                 transforms[i] = rendererTransform.worldToLocalMatrix * rendererTransform.localToWorldMatrix;
-                materials[i] = renderer.sharedMaterials;
+                if (hackToSingleMaterial) {
+                    Material[] fakeMaterials = new Material[meshes[i].subMeshCount];
+                    for (int qq=0;qq<meshes[i].subMeshCount;qq++) {
+                        fakeMaterials[qq] = fakeSingleMaterial;
+                    }
+                    materials[i] = fakeMaterials;
+                } else {
+                    materials[i] = renderer.sharedMaterials;
+                }
                 bones[i] = renderer.bones;
             }
 
@@ -180,7 +190,7 @@ namespace UnityMeshSimplifier
                 var meshMaterials = materials[meshIndex];
                 if (meshMaterials == null)
                     throw new System.ArgumentException(string.Format("The materials for mesh at index {0} is null.", meshIndex), nameof(materials));
-                else if (meshMaterials.Length != mesh.subMeshCount)
+                else if (meshMaterials.Length < mesh.subMeshCount) //hack, used to be !=
                     throw new System.ArgumentException(
                         string.Format("The materials for mesh at index {0} doesn't match the submesh count ({1} != {2}).",
                             meshIndex, meshMaterials.Length, mesh.subMeshCount), nameof(materials));
